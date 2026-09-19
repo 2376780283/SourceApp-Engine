@@ -10,6 +10,7 @@ Copyright (C) 2022 nillerusr
 #include <unistd.h>
 #include <SDL_hints.h>
 #include <SDL_system.h>
+#include <SDL.h>
 #include "tier0/dbg.h"
 #include "tier0/threadtools.h"
 #include "SourceApp/sourceapp_userstats.h"
@@ -120,6 +121,31 @@ void android_property_print(const char *name)
 }
 
 // --------------------------------------------------------------------------------------------
+// purpose: Mouse visibility callback and mode control
+// --------------------------------------------------------------------------------------------
+extern "C" void SetMouseVisibilityHook(void (*callback)(bool));
+
+static void OnMouseVisibilityChangedNative(bool bVisible) {
+    JNIEnv *env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (!env) return;
+
+    jclass clazz = env->FindClass("zzh/source/launcher/data/jni/GameBridge");
+    if (!clazz) return;
+
+    jmethodID method = env->GetStaticMethodID(clazz, "onMouseVisibilityChanged", "(Z)V");
+    if (method) {
+        env->CallStaticVoidMethod(clazz, method, (jboolean)bVisible);
+    }
+    env->DeleteLocalRef(clazz);
+}
+
+DLL_EXPORT void Java_zzh_source_launcher_data_jni_GameBridge_setMouseMode(JNIEnv* env, jclass clazz, jboolean isRelative)
+{
+    SDL_SetRelativeMouseMode(isRelative ? SDL_TRUE : SDL_FALSE);
+}
+
+
+// --------------------------------------------------------------------------------------------
 // purpose: 程序入口
 // --------------------------------------------------------------------------------------------
 DLL_EXPORT int LauncherMainAndroid(int argc, char **argv)
@@ -130,6 +156,9 @@ DLL_EXPORT int LauncherMainAndroid(int argc, char **argv)
     InitCrashHandler();
 
     Msg("[SourceApp]: GetTotalMemory() = %.2f \n", GetTotalMemory());
+
+    // Register the mouse visibility hook
+    SetMouseVisibilityHook(OnMouseVisibilityChangedNative);
 
     android_property_print("ro.build.version.sdk");
     android_property_print("ro.product.device");
