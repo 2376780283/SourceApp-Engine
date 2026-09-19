@@ -1250,6 +1250,15 @@ void CSDLMgr::PostEvent( const CCocoaEvent &theEvent, bool debugEvent )
 	m_CocoaEventsMutex.Unlock();
 }
 
+#ifdef ANDROID
+typedef void (*MouseVisibilityCallback)(bool bVisible);
+static MouseVisibilityCallback g_pMouseVisibilityCallback = nullptr;
+
+extern "C" void SetMouseVisibilityHook(MouseVisibilityCallback callback) {
+    g_pMouseVisibilityCallback = callback;
+}
+#endif
+
 void CSDLMgr::SetMouseVisible( bool bState )
 {
 	SDLAPP_FUNC;
@@ -1261,6 +1270,12 @@ void CSDLMgr::SetMouseVisible( bool bState )
 	{
 		m_bCursorVisible = bState;
 		m_bSetMouseVisibleCalled = true;
+
+#ifdef ANDROID
+		if (g_pMouseVisibilityCallback) {
+			g_pMouseVisibilityCallback(bState);
+		}
+#endif
 	}
 }
 
