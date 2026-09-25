@@ -139,11 +139,31 @@ static void OnMouseVisibilityChangedNative(bool bVisible) {
     env->DeleteLocalRef(clazz);
 }
 
+// SDL滚轮事件
+DLL_EXPORT void Java_zzh_source_launcher_data_jni_GameBridge_sendMouseWheel( JNIEnv *env, jclass clazz, jint scrollX, jint scrollY) {
+    if (scrollX == 0 && scrollY == 0) return;
+    SDL_Window *window = SDL_GetMouseFocus();
+    Uint32 windowID = window ? SDL_GetWindowID(window) : 0;
+
+    SDL_Event ev;
+    SDL_zero(ev);                            // SDL_stdinc.h 里的宏，等价 memset
+    ev.type              = SDL_MOUSEWHEEL;
+    ev.wheel.timestamp   = SDL_GetTicks();
+    ev.wheel.windowID    = windowID;
+    ev.wheel.which       = 0;                // 0 = 鼠标设备
+    ev.wheel.x           = scrollX;          // 整数部分：横向滚动，正=向右
+    ev.wheel.y           = scrollY;          // 整数部分：纵向滚动，正=远离用户（向上滚）
+    ev.wheel.direction   = SDL_MOUSEWHEEL_NORMAL;
+    ev.wheel.preciseX    = (float)scrollX;   // 2.0.18+，老编译器报错就删掉这两行
+    ev.wheel.preciseY    = (float)scrollY;
+
+    SDL_PushEvent(&ev);
+}
+
 DLL_EXPORT void Java_zzh_source_launcher_data_jni_GameBridge_setMouseMode(JNIEnv* env, jclass clazz, jboolean isRelative)
 {
     SDL_SetRelativeMouseMode(isRelative ? SDL_TRUE : SDL_FALSE);
 }
-
 
 // --------------------------------------------------------------------------------------------
 // purpose: 程序入口
