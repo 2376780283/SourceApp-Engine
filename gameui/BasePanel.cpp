@@ -2919,6 +2919,7 @@ public:
 		vgui::surface()->RestrictPaintToSinglePanel(GetVPanel());
 
 		GameUI().PreventEngineHideGameUI();
+		MakePopup();
 	}
 
 	void OnKeyCodeTyped(KeyCode code)
@@ -3011,6 +3012,7 @@ public:
 		BaseClass::DoModal( pFrameOver );
 		vgui::surface()->RestrictPaintToSinglePanel(GetVPanel());
 		GameUI().PreventEngineHideGameUI();
+		MakePopup();
 	}
 
 	void OnKeyCodeTyped(KeyCode code)
