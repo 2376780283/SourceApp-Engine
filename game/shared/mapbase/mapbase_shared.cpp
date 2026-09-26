@@ -778,7 +778,7 @@ CUtlVector<MODTITLECOMMENT> *Mapbase_GetChapterMaps()
 					{
 						int index = g_MapbaseChapterList.AddToTail();
 						g_MapbaseChapterList[index].iChapter = atoi(pChapters->GetName());
-						Q_strncpy(g_MapbaseChapterList[index].pChapterName, pChapters->GetString(), sizeof(g_MapbaseChapterList[index]));
+						Q_strncpy(g_MapbaseChapterList[index].pChapterName, pChapters->GetString(), sizeof(g_MapbaseChapterList[index].pChapterName));
 					}
 				}
 

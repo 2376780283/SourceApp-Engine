@@ -760,7 +760,7 @@ void CProtagonistSystem::PurgeProtagonists()
 
 	for (unsigned int i = 0; i < m_Strings.Count(); i++)
 	{
-		delete m_Strings[i];
+		delete[] m_Strings[i];
 	}
 	m_Strings.Purge();
 }

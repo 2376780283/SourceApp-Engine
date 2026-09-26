@@ -128,7 +128,7 @@ ConVar cl_leveloverview( "cl_leveloverview", "0", FCVAR_CHEAT );
 #define MAPEXTENTS_DEFAULT "16384"
 #endif
 
-static ConVar r_mapextents( "r_mapextents", "16384", FCVAR_CHEAT, 
+static ConVar r_mapextents( "r_mapextents", MAPEXTENTS_DEFAULT, FCVAR_CHEAT, 
 						   "Set the max dimension for the map.  This determines the far clipping plane" );
 
 // UNDONE: Delete this or move to the material system?
