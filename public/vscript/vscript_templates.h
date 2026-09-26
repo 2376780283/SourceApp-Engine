@@ -1,4 +1,4 @@
-//========== Copyright © 2008, Valve Corporation, All rights reserved. ========
+//========== Copyright ï¿½ 2008, Valve Corporation, All rights reserved. ========
 //
 // Purpose:
 //
@@ -61,7 +61,7 @@ FUNC_GENERATE_ALL( DEFINE_MEMBER_FUNC_TYPE_DEDUCER );
 
 FUNC_GENERATE_ALL( DEFINE_CONST_MEMBER_FUNC_TYPE_DEDUCER );
 
-#define ScriptInitMemberFuncDescriptor_( pDesc, class, func, scriptName )	if ( 0 ) {} else { (pDesc)->m_pszScriptName = scriptName; (pDesc)->m_pszFunction = #func; ScriptDeduceFunctionSignature( pDesc, (class *)(0), &class::func ); (pDesc)->m_pScriptClassDesc = GetScriptDesc<class>(nullptr); }
+#define ScriptInitMemberFuncDescriptor_( pDesc, class, func, scriptName )	if ( 0 ) {} else { (pDesc)->m_pszScriptName = scriptName; (pDesc)->m_pszFunction = #func; ScriptDeduceFunctionSignature( pDesc, (class *)(0), &class::func ); (pDesc)->m_pScriptClassDesc = GetScriptDesc<class>(nullptr, false); }
 
 #define ScriptInitFuncDescriptorNamed( pDesc, func, scriptName )						if ( 0 ) {} else { (pDesc)->m_pszScriptName = scriptName; (pDesc)->m_pszFunction = #func; ScriptDeduceFunctionSignature( pDesc, &func ); }
 #define ScriptInitFuncDescriptor( pDesc, func )											ScriptInitFuncDescriptorNamed( pDesc, func, #func )

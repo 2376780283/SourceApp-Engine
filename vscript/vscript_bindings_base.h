@@ -17,11 +17,10 @@
 // ----------------------------------------------------------------------------
 // KeyValues access
 // ----------------------------------------------------------------------------
-// vscript_bindings_base.h
 class CScriptKeyValues
 {
 public:
-    CScriptKeyValues( KeyValues *pKeyValues = NULL, bool bBorrow = false );
+	CScriptKeyValues( KeyValues *pKeyValues = NULL, bool bBorrow = false );
 	~CScriptKeyValues( );
 
 	HSCRIPT_RC ScriptFindKey( const char *pszName );
