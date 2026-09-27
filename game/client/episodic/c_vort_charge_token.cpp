@@ -393,6 +393,8 @@ void C_VortigauntEffectDispel::NotifyShouldTransmit( ShouldTransmitState_t state
 	if ( state == SHOULDTRANSMIT_START )
 	{
 		m_hEffect = ParticleProp()->Create( "vortigaunt_hand_glow", PATTACH_ABSORIGIN_FOLLOW );
+		if ( !m_hEffect )
+			return;
 		m_hEffect->SetControlPointEntity( 0, this );
 	}
 }
