@@ -1,4 +1,4 @@
-//========== Copyright © 2008, Valve Corporation, All rights reserved. ========
+//========== Copyright  2008, Valve Corporation, All rights reserved. ========
 //
 // Purpose: VScript
 //
@@ -526,7 +526,7 @@ struct ScriptVariant_t
 			{
 				pDest->m_pVector = (Vector*)malloc( sizeof( Vector ) );
 				pDest->EmplaceAllocedVector( *m_pVector );
-				m_flags |= SV_FREE;
+				pDest->m_flags |= SV_FREE;
 			}
 			else if ( m_type == FIELD_CSTRING )
 			{

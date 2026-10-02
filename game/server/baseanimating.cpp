@@ -2320,7 +2320,7 @@ HSCRIPT_RC CBaseAnimating::ScriptGetSequenceKeyValues( int iSequence )
 	HSCRIPT hScript = NULL;
 	if ( pSeqKeyValues )
 	{
-		hScript = scriptmanager->CreateScriptKeyValues( g_pScriptVM, pSeqKeyValues );
+		hScript = scriptmanager->CreateScriptKeyValues( g_pScriptVM, pSeqKeyValues, true );
 	}
 
 	return hScript;
