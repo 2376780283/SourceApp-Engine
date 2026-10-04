@@ -80,10 +80,9 @@ struct GLMTexFormatDesc
 	GLenum		m_glDataFormat;		// GL data format
 	GLenum		m_glDataType;		// GL data type
 	
-	int			m_blockWidth;		// block width in texels (1 for uncompressed, 4 for DXT/ASTC 4x4, etc.)
-	int			m_blockHeight;		// block height in texels
-	int			m_blockDepth;		// block depth in texels (1 for 2D textures, 3-6 for 3D ASTC)
-	int			m_bytesPerBlock;	// bytes per compressed block (16 for ASTC/DXT3/DXT5, 8 for DXT1, etc.)
+	int			m_chunkSize;		// 1 or 4 - 4 is used for compressed textures
+	int			m_bytesPerSquareChunk;	// how many bytes for the smallest quantum (m_chunkSize x m_chunkSize)
+									// this description lets us calculate size cleanly without conditional logic for compression
 };
 const GLMTexFormatDesc *GetFormatDesc( D3DFORMAT format );
 
@@ -218,10 +217,6 @@ struct GLMTexLockDesc
 	int					m_sliceIndex;			// which slice in the layout
 	int					m_sliceBaseOffset;		// where is that in the texture data
 	int					m_sliceRegionOffset;	// offset to the start (lowest address corner) of the region requested
-
-	void				*m_pReadbackBuffer;		// scratch readback storage for readonly locks on
-												// textures without a host copy (NULL when unused)
-	bool				m_bReadbackIsPBO;		// m_pReadbackBuffer is a PBO mapping (unmap at unlock)
 };
 
 //===============================================================================
@@ -262,12 +257,10 @@ struct GLMTexPackedSamplingParams
 	uint32 m_mipFilter		: GLM_PACKED_SAMPLER_PARAMS_MIP_FILTER_BITS;
 
 	uint32 m_minLOD			: GLM_PACKED_SAMPLER_PARAMS_MIN_LOD_BITS;
-	uint32 m_maxLOD			: GLM_PACKED_SAMPLER_PARAMS_MIN_LOD_BITS;
 	uint32 m_maxAniso		: GLM_PACKED_SAMPLER_PARAMS_MAX_ANISO_BITS;
 	uint32 m_compareMode	: GLM_PACKED_SAMPLER_PARAMS_COMPARE_MODE_BITS;
 	uint32 m_srgb			: GLM_PACKED_SAMPLER_PARAMS_SRGB_BITS;
 	uint32 m_isValid		: 1;
-	uint32 m_tombstone		: 1;	// open-addressing tombstone: slot was evicted; probes skip past it but inserts may reuse it
 };
 
 struct GLMTexSamplingParams
@@ -297,8 +290,6 @@ struct GLMTexSamplingParams
 		m_packed.m_minFilter = D3DTEXF_POINT;
 		m_packed.m_magFilter = D3DTEXF_POINT;
 		m_packed.m_mipFilter = D3DTEXF_NONE;
-		m_packed.m_minLOD = 0;																			// GL_TEXTURE_MIN_LOD: no fine cap (=D3DSAMP_MAXMIPLEVEL default of 0)
-		m_packed.m_maxLOD = ( 1 << GLM_PACKED_SAMPLER_PARAMS_MIN_LOD_BITS ) - 1;						// GL_TEXTURE_MAX_LOD: sentinel "no coarse cap"; per-texture streaming clamps this down at flush time
 		m_packed.m_maxAniso = 1;
 		m_packed.m_compareMode = 0;
 		m_packed.m_isValid = true;
@@ -322,10 +313,7 @@ struct GLMTexSamplingParams
 		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_WRAP_R, dxtogl_addressMode[m_packed.m_addressW] );
 		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_MIN_FILTER, dxtogl_minFilter[m_packed.m_minFilter][m_packed.m_mipFilter] );
 		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_MAG_FILTER, dxtogl_magFilter[m_packed.m_magFilter] );
-		if ( gGL->m_bHave_GL_EXT_texture_filter_anisotropic )
-		{
-			gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_packed.m_maxAniso );
-		}
+		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_packed.m_maxAniso );
 
 		float flBorderColor[4] = { 0, 0, 0, 0 };
 		if ( m_borderColor )
@@ -337,14 +325,9 @@ struct GLMTexSamplingParams
 		}
 		gGL->glSamplerParameterfv( nSamplerObject, GL_TEXTURE_BORDER_COLOR, flBorderColor ); // <-- this crashes ATI's driver, remark it out
 		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_MIN_LOD, m_packed.m_minLOD );
-		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_MAX_LOD, m_packed.m_maxLOD );
-		{
-			float effectiveLodBias = m_lodBias;
-			if ( !gGL->m_bHave_GL_EXT_texture_filter_anisotropic )
-				effectiveLodBias -= 0.5f;	// no aniso on this GPU - bias toward higher-quality mips in all filter modes to reduce distant shimmering (e.g., Mali-G31)
-			gGL->glSamplerParameterf( nSamplerObject, GL_TEXTURE_LOD_BIAS, effectiveLodBias );
-		}
+//		gGL->glSamplerParameterfv( nSamplerObject, GL_TEXTURE_LOD_BIAS, &m_lodBias );
 		gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_COMPARE_MODE_ARB, m_packed.m_compareMode ? GL_COMPARE_R_TO_TEXTURE_ARB : GL_NONE );
+//		gGL->glSamplerParameterf( nSamplerObject, GL_TEXTURE_LOD_BIAS, m_lodBias );
 		if ( m_packed.m_compareMode )
 		{
 			gGL->glSamplerParameteri( nSamplerObject, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL );
@@ -383,17 +366,14 @@ struct GLMTexSamplingParams
 			gGL->glTexParameteri( target, GL_TEXTURE_WRAP_R, dxtogl_addressMode[m_packed.m_addressW] );
 		}
 
-		if ( ( m_packed.m_minFilter != curState.m_packed.m_minFilter ) ||
+		if ( ( m_packed.m_minFilter != curState.m_packed.m_minFilter ) || 
 			 ( m_packed.m_magFilter != curState.m_packed.m_magFilter ) ||
 			 ( m_packed.m_mipFilter != curState.m_packed.m_mipFilter ) ||
 			 ( m_packed.m_maxAniso != curState.m_packed.m_maxAniso ) )
 		{
 			gGL->glTexParameteri( target, GL_TEXTURE_MIN_FILTER, dxtogl_minFilter[m_packed.m_minFilter][m_packed.m_mipFilter] );
 			gGL->glTexParameteri( target, GL_TEXTURE_MAG_FILTER, dxtogl_magFilter[m_packed.m_magFilter] );
-			if ( gGL->m_bHave_GL_EXT_texture_filter_anisotropic )
-			{
-				gGL->glTexParameteri( target, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_packed.m_maxAniso );
-			}
+			gGL->glTexParameteri( target, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_packed.m_maxAniso );
 		}
 
 		if ( m_borderColor != curState.m_borderColor )
@@ -415,17 +395,10 @@ struct GLMTexSamplingParams
 			gGL->glTexParameteri( target, GL_TEXTURE_MIN_LOD, m_packed.m_minLOD );
 		}
 
-		if ( m_packed.m_maxLOD != curState.m_packed.m_maxLOD )
-		{
-			gGL->glTexParameteri( target, GL_TEXTURE_MAX_LOD, m_packed.m_maxLOD );
-		}
-
 		if ( m_lodBias != curState.m_lodBias )
 		{
-			float effectiveLodBias = m_lodBias;
-			if ( !gGL->m_bHave_GL_EXT_texture_filter_anisotropic )
-				effectiveLodBias -= 0.5f;	// no aniso on this GPU - bias toward higher-quality mips in all filter modes to reduce distant shimmering (e.g., Mali-G31)
-			gGL->glTexParameterf( target, GL_TEXTURE_LOD_BIAS, effectiveLodBias );
+			// Could use TexParameterf instead, but we don't currently grab it. This works fine, too.
+			gGL->glTexParameterfv( target, GL_TEXTURE_LOD_BIAS, &m_lodBias );
 		}
 
 		if ( m_packed.m_compareMode != curState.m_packed.m_compareMode )
@@ -460,10 +433,7 @@ struct GLMTexSamplingParams
 		gGL->glTexParameteri( target, GL_TEXTURE_WRAP_R, dxtogl_addressMode[m_packed.m_addressW] );
 		gGL->glTexParameteri( target, GL_TEXTURE_MIN_FILTER, dxtogl_minFilter[m_packed.m_minFilter][m_packed.m_mipFilter] );
 		gGL->glTexParameteri( target, GL_TEXTURE_MAG_FILTER, dxtogl_magFilter[m_packed.m_magFilter] );
-		if ( gGL->m_bHave_GL_EXT_texture_filter_anisotropic )
-		{
-			gGL->glTexParameteri( target, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_packed.m_maxAniso );
-		}
+		gGL->glTexParameteri( target, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_packed.m_maxAniso );
 
 		float flBorderColor[4] = { 0, 0, 0, 0 };
 		if ( m_borderColor )
@@ -475,13 +445,7 @@ struct GLMTexSamplingParams
 		}
 		gGL->glTexParameterfv( target, GL_TEXTURE_BORDER_COLOR, flBorderColor ); // <-- this crashes ATI's driver, remark it out
 		gGL->glTexParameteri( target, GL_TEXTURE_MIN_LOD, m_packed.m_minLOD );
-		gGL->glTexParameteri( target, GL_TEXTURE_MAX_LOD, m_packed.m_maxLOD );
-		{
-			float effectiveLodBias = m_lodBias;
-			if ( !gGL->m_bHave_GL_EXT_texture_filter_anisotropic )
-				effectiveLodBias -= 0.5f;	// no aniso on this GPU - bias toward higher-quality mips in all filter modes to reduce distant shimmering (e.g., Mali-G31)
-			gGL->glTexParameterf( target, GL_TEXTURE_LOD_BIAS, effectiveLodBias );
-		}
+//		gGL->glTexParameterfv( target, GL_TEXTURE_LOD_BIAS, &m_lodBias );
 		gGL->glTexParameteri( target, GL_TEXTURE_COMPARE_MODE_ARB, m_packed.m_compareMode ? GL_COMPARE_R_TO_TEXTURE_ARB : GL_NONE );
 		if ( m_packed.m_compareMode )
 		{
@@ -547,12 +511,6 @@ protected:
 	GLubyte					*m_mapped;
 	GLenum					m_texGLTarget;
 	uint					m_nSamplerType;		// SAMPLER_2D, etc.
-
-	// Readback scratch for backing-less textures (see ReadTexels): grow-only
-	// CPU buffer + optional GL_PIXEL_PACK_BUFFER (gl_tex_readback_pbo).
-	GLubyte					*m_pReadbackBuffer;
-	uint					m_nReadbackBufferSize;
-	GLuint					m_pReadbackPBO;
 	
 	GLMTexSamplingParams	m_SamplingParams;
 
@@ -573,7 +531,6 @@ protected:
 	int						m_rtAttachCount; // how many RT's have this texture attached somewhere
 
 	char					*m_backing;		// backing storage if available
-	uint					m_nBackingSize;		// 0 = plain malloc (free() directly); else pool slab size (return via ReleaseTexScratch)
 	
 	int						m_lockCount;	// lock reqs are stored in the GLMContext for tracking
 

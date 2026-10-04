@@ -743,7 +743,6 @@ void GLMContext::DumpCaps( void )
 	dumpfield( m_cantResolveFlipped );
 	dumpfield( m_cantResolveScaled );
 	dumpfield( m_costlyGammaFlips );
-	dumpfield( m_hasFramebufferFetch );
 	dumpfield( m_badDriver1064NV );
 	dumpfield( m_badDriver108Intel );
 

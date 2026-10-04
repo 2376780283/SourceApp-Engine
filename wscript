@@ -57,7 +57,6 @@ projects={
 		'game/client',
 		'game/server',
 		'gameui',
-		'game/gamepadui',
 		'inputsystem',
 		'ivp/havana',
 		'ivp/havana/havok/hk_base',
@@ -527,14 +526,8 @@ def configure(conf):
 	elif conf.env.DEST_CPU in ['arm', 'aarch64']:
 		flags += ['-fsigned-char']
 
-	if conf.env.DEST_CPU == 'aarch64':
-		# RK3326/Cortex-A35: tune specifically for this core
-		flags += ['-mtune=cortex-a35']
-		flags += ['-march=armv8-a+fp+simd+crypto+crc']
-	elif conf.env.DEST_CPU == 'arm':
-		# RK3326/Cortex-A35: tune specifically for this core
-		flags += ['-mcpu=cortex-a35']
-		flags += ['-march=armv7-a', '-mfpu=neon']
+	if conf.env.DEST_CPU == 'arm':
+		flags += ['-march=armv7-a', '-mfpu=neon-vfpv4']
 
 	if conf.env.DEST_OS == 'freebsd':
 		linkflags += ['-lexecinfo']

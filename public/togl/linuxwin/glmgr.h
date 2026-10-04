@@ -56,6 +56,9 @@
 #include "dxabstract_types.h"
 #include "tier0/icommandline.h"
 
+#undef FORCEINLINE
+#define FORCEINLINE inline
+
 //===============================================================================
 
 #define GLM_OPENGL_VENDOR_ID 1

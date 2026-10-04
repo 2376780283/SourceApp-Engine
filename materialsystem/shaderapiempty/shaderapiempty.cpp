@@ -785,7 +785,6 @@ public:
 	virtual bool FakeSRGBWrite() const;
 	virtual bool CanDoSRGBReadFromRTs() const;
 	virtual bool SupportsGLMixedSizeTargets() const;
-	virtual bool HasFramebufferFetch() const;
 
 	const char *GetHWSpecificShaderDLLName() const;
 	bool NeedsAAClamp() const
@@ -2172,11 +2171,6 @@ bool CShaderAPIEmpty::CanDoSRGBReadFromRTs() const
 }
 
 bool CShaderAPIEmpty::SupportsGLMixedSizeTargets() const
-{
-	return false;
-}
-
-bool CShaderAPIEmpty::HasFramebufferFetch() const
 {
 	return false;
 }
