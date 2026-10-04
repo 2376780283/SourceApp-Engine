@@ -4255,6 +4255,7 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 
 	// Eject brass
 	case CL_EVENT_EJECTBRASS1:
+    	if ( m_Attachments.Count() > 0 )
 		{
 			// Check if we're a weapon, if we belong to the local player, and if the local player is in third person - if all are true, don't do a muzzleflash in this instance, because
 			// we're using the view models dispatch for smoothness.
