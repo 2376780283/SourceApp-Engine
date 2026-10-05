@@ -56,6 +56,14 @@ ConVar sdl_double_click_time( "sdl_double_click_time", "400" );
 
 #define SDL_PUMP_PERF_ANALYSIS 0
 
+// -----------------------------------------------------------------------------
+// Host callbacks implemented by the launcher application (main.cpp).
+// Declared as ordinary C++ external symbols so the linker enforces
+// the launcher provides them at build time.
+// -----------------------------------------------------------------------------
+extern void NotifyMouseVisibilityChanged(bool bVisible);
+extern void NotifyCursorChanged(SDL_Cursor *hCursor);
+
 #if SDL_PUMP_PERF_ANALYSIS
 struct CSDLPumpPerfStats
 {
@@ -1250,15 +1258,6 @@ void CSDLMgr::PostEvent( const CCocoaEvent &theEvent, bool debugEvent )
 	m_CocoaEventsMutex.Unlock();
 }
 
-#ifdef ANDROID
-typedef void (*MouseVisibilityCallback)(bool bVisible);
-static MouseVisibilityCallback g_pMouseVisibilityCallback = nullptr;
-
-extern "C" void SetMouseVisibilityHook(MouseVisibilityCallback callback) {
-    g_pMouseVisibilityCallback = callback;
-}
-#endif
-
 void CSDLMgr::SetMouseVisible( bool bState )
 {
 	SDLAPP_FUNC;
@@ -1271,11 +1270,7 @@ void CSDLMgr::SetMouseVisible( bool bState )
 		m_bCursorVisible = bState;
 		m_bSetMouseVisibleCalled = true;
 
-#ifdef ANDROID
-		if (g_pMouseVisibilityCallback) {
-			g_pMouseVisibilityCallback(bState);
-		}
-#endif
+		NotifyMouseVisibilityChanged(bState);
 	}
 }
 
@@ -1293,6 +1288,7 @@ void CSDLMgr::SetMouseCursor( SDL_Cursor *hCursor )
 		else
 		{
 			m_hCursor = hCursor;
+			NotifyCursorChanged(hCursor);
 		}
 		m_bSetMouseCursorCalled = true;
 	}
