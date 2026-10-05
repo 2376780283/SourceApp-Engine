@@ -10,11 +10,11 @@ Copyright (C) 2022 nillerusr
 #include <unistd.h>
 #include <SDL_hints.h>
 #include <SDL_system.h>
-#include <SDL.h>
 #include "tier0/dbg.h"
 #include "tier0/threadtools.h"
 #include "SourceApp/sourceapp_userstats.h"
 #include "SourceApp/sourceapp_android.h"
+#include <SDL.h>
 
 char *LauncherArgv[512];
 char java_args[4096];
@@ -121,6 +121,66 @@ void android_property_print(const char *name)
 }
 
 // --------------------------------------------------------------------------------------------
+// purpose: Host callbacks invoked by sdlmgr.cpp; bridged to Kotlin via JNI.
+// --------------------------------------------------------------------------------------------
+
+// Mirrors SDL_Cursor layout used by SDL_mouse.c: { SDL_Cursor *next; void *driverdata; }
+struct SDL_Cursor_Layout {
+    void *next;
+    void *driverdata;
+};
+
+// Mirrors SDL_AndroidCursorData from SDL_androidmouse.c.
+struct SDL_AndroidCursorData_Layout {
+    int custom_cursor;
+    int system_cursor;
+};
+
+// Cache of the last cursor shape pushed to Kotlin, to avoid redundant JNI calls.
+static int g_lastCursorShape = -2;
+
+void NotifyMouseVisibilityChanged(bool bVisible)
+{
+    JNIEnv *env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (!env) return;
+
+    jclass clazz = env->FindClass("zzh/source/launcher/data/jni/GameBridge");
+    if (!clazz) return;
+
+    jmethodID method = env->GetStaticMethodID(clazz, "onMouseVisibilityChanged", "(Z)V");
+    if (method) {
+        env->CallStaticVoidMethod(clazz, method, (jboolean)bVisible);
+    }
+    env->DeleteLocalRef(clazz);
+}
+
+void NotifyCursorChanged(SDL_Cursor *hCursor)
+{
+    if (!hCursor) return;
+
+    void *driver = ((SDL_Cursor_Layout*)hCursor)->driverdata;
+    if (!driver) return;
+
+    SDL_AndroidCursorData_Layout *data = (SDL_AndroidCursorData_Layout*)driver;
+    int shapeId = (data->custom_cursor != 0) ? -1 : data->system_cursor;
+
+    if (shapeId == g_lastCursorShape) return;
+    g_lastCursorShape = shapeId;
+
+    JNIEnv *env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (!env) return;
+
+    jclass clazz = env->FindClass("zzh/source/launcher/data/jni/GameBridge");
+    if (!clazz) return;
+
+    jmethodID method = env->GetStaticMethodID(clazz, "onCursorShapeChanged", "(I)V");
+    if (method) {
+        env->CallStaticVoidMethod(clazz, method, (jint)shapeId);
+    }
+    env->DeleteLocalRef(clazz);
+}
+
+// --------------------------------------------------------------------------------------------
 // purpose: Mouse visibility callback and mode control
 // --------------------------------------------------------------------------------------------
 extern "C" void SetMouseVisibilityHook(void (*callback)(bool));
@@ -176,9 +236,6 @@ DLL_EXPORT int LauncherMainAndroid(int argc, char **argv)
     InitCrashHandler();
 
     Msg("[SourceApp]: GetTotalMemory() = %.2f \n", GetTotalMemory());
-
-    // Register the mouse visibility hook
-    SetMouseVisibilityHook(OnMouseVisibilityChangedNative);
 
     android_property_print("ro.build.version.sdk");
     android_property_print("ro.product.device");

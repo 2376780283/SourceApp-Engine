@@ -53,6 +53,64 @@ ConVar gl_finish( "gl_finish", "0" );
 ConVar sdl_double_click_size( "sdl_double_click_size", "2" );
 ConVar sdl_double_click_time( "sdl_double_click_time", "400" );
 
+#define SDL_PUMP_PERF_ANALYSIS 0
+
+// -----------------------------------------------------------------------------
+// Host callbacks implemented by the launcher application (main.cpp).
+// Declared as ordinary C++ external symbols so the linker enforces
+// the launcher provides them at build time.
+// -----------------------------------------------------------------------------
+extern void NotifyMouseVisibilityChanged(bool bVisible);
+extern void NotifyCursorChanged(SDL_Cursor *hCursor);
+
+#if SDL_PUMP_PERF_ANALYSIS
+struct CSDLPumpPerfStats
+{
+	CCycleCount m_PumpTime;
+	uint64 m_nPumps;
+	uint64 m_nEvents;
+	uint64 m_nMouseMotionEvents;
+	uint64 m_nControllerEvents;
+	uint64 m_nWindowEvents;
+	uint64 m_nMaxEventPumps;
+
+	void Reset()
+	{
+		m_PumpTime.Init();
+		m_nPumps = 0;
+		m_nEvents = 0;
+		m_nMouseMotionEvents = 0;
+		m_nControllerEvents = 0;
+		m_nWindowEvents = 0;
+		m_nMaxEventPumps = 0;
+	}
+};
+
+static CSDLPumpPerfStats s_SDLPumpPerfStats;
+
+CON_COMMAND( sdl_dump_pump_stats, "Print SDL event-pump timing and event counts; pass 1 to reset after printing." )
+{
+	const double flPumps = (double)s_SDLPumpPerfStats.m_nPumps;
+	const double flPumpMS = s_SDLPumpPerfStats.m_PumpTime.GetMillisecondsF();
+
+	ConMsg( "SDL pump: Calls: %llu Total: %4.3fms (%4.3fms/call) Events: %llu (%4.2f/call) MouseMotion: %llu Controller: %llu Window: %llu Hit100Limit: %llu\n",
+		(unsigned long long)s_SDLPumpPerfStats.m_nPumps,
+		flPumpMS,
+		flPumps ? flPumpMS / flPumps : 0.0,
+		(unsigned long long)s_SDLPumpPerfStats.m_nEvents,
+		flPumps ? (double)s_SDLPumpPerfStats.m_nEvents / flPumps : 0.0,
+		(unsigned long long)s_SDLPumpPerfStats.m_nMouseMotionEvents,
+		(unsigned long long)s_SDLPumpPerfStats.m_nControllerEvents,
+		(unsigned long long)s_SDLPumpPerfStats.m_nWindowEvents,
+		(unsigned long long)s_SDLPumpPerfStats.m_nMaxEventPumps );
+
+	if ( args.ArgC() == 2 && args.Arg(1)[0] != '0' )
+	{
+		s_SDLPumpPerfStats.Reset();
+	}
+}
+#endif
+
 #if defined( DX_TO_GL_ABSTRACTION )
 COpenGLEntryPoints *gGL = NULL;
 #endif
@@ -1095,15 +1153,6 @@ void CSDLMgr::PostEvent( const CCocoaEvent &theEvent, bool debugEvent )
 	m_CocoaEventsMutex.Unlock();
 }
 
-#ifdef ANDROID
-typedef void (*MouseVisibilityCallback)(bool bVisible);
-static MouseVisibilityCallback g_pMouseVisibilityCallback = nullptr;
-
-extern "C" void SetMouseVisibilityHook(MouseVisibilityCallback callback) {
-    g_pMouseVisibilityCallback = callback;
-}
-#endif
-
 void CSDLMgr::SetMouseVisible( bool bState )
 {
 	SDLAPP_FUNC;
@@ -1116,11 +1165,7 @@ void CSDLMgr::SetMouseVisible( bool bState )
 		m_bCursorVisible = bState;
 		m_bSetMouseVisibleCalled = true;
 
-#ifdef ANDROID
-		if (g_pMouseVisibilityCallback) {
-			g_pMouseVisibilityCallback(bState);
-		}
-#endif
+		NotifyMouseVisibilityChanged(bState);
 	}
 }
 
@@ -1138,6 +1183,7 @@ void CSDLMgr::SetMouseCursor( SDL_Cursor *hCursor )
 		else
 		{
 			m_hCursor = hCursor;
+			NotifyCursorChanged(hCursor);
 		}
 		m_bSetMouseCursorCalled = true;
 	}
