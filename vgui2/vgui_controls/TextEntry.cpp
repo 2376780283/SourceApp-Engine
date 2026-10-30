@@ -638,6 +638,11 @@ bool TextEntry::NeedsEllipses( HFont font, int *pIndex )
 void TextEntry::PaintBackground()
 {
 	BaseClass::PaintBackground();
+	PaintText();
+}
+
+void TextEntry::PaintText(bool drawLanguageID)
+{
 
 	// draw background
 	Color col;
@@ -666,7 +671,7 @@ void TextEntry::PaintBackground()
 	wchar_t shortcode[ 5 ];
 	shortcode[ 0 ] = L'\0';
 
-	if ( m_bAllowNonAsciiCharacters )
+	if ( m_bAllowNonAsciiCharacters && drawLanguageID )
 	{
 		input()->GetIMELanguageShortCode( shortcode, sizeof( shortcode ) );
 
@@ -3829,6 +3834,29 @@ void TextEntry::SelectNoText()
 {
 	_select[0] = -1;
 	_select[1] = 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: HL2SB - move the text caret to a byte index, the way GMod scripts
+// use it after replacing the entry's contents.  The selection is cleared so
+// the caret is a plain insertion point, and the value is clamped to the text.
+//-----------------------------------------------------------------------------
+void TextEntry::SetCaretPos( int cursorPos )
+{
+	const int nLength = GetTextLength();
+	if ( cursorPos < 0 )
+		cursorPos = 0;
+	if ( cursorPos > nLength )
+		cursorPos = nLength;
+
+	SelectNoText();
+	_cursorPos = cursorPos;
+	_cursorIsAtEnd = ( cursorPos >= nLength );
+	_putCursorAtEnd = false;
+
+	ResetCursorBlink();
+	InvalidateLayout( false, false );
+	Repaint();
 }
 
 //-----------------------------------------------------------------------------
