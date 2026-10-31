@@ -16,7 +16,7 @@
 //=============================================================================//
 
 #include "cbase.h"
-#include "screenspaceeffects.h"
+#include "ScreenSpaceEffects.h"
 #include "materialsystem/materialsystemutil.h"
 #include "materialsystem/imaterial.h"
 #include "view_scene.h"

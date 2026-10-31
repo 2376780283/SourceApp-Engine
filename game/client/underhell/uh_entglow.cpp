@@ -7,7 +7,7 @@
 //=============================================================================
 
 #include "cbase.h"
-#include "screenspaceeffects.h"
+#include "ScreenSpaceEffects.h"
 #include "cliententitylist.h"
 #include "model_types.h"
 #include "studio.h"
