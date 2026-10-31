@@ -161,7 +161,7 @@ void CHudUHBattery::Paint()
 	// Battery count: original prints "   x<N>" (3 leading spaces, which push the
 	// digits right) at text position (0,0) — the panel's top-left. Match that.
 	wchar_t szText[16];
-	swprintf( szText, L"   x%i", m_iBatteryCount );
+	swprintf( szText, ARRAYSIZE(szText), L"   x%i", m_iBatteryCount );
 
 	vgui::surface()->DrawSetTextFont( m_hNumberFont );
 	vgui::surface()->DrawSetTextColor( m_HullColor[0], m_HullColor[1], m_HullColor[2], m_HullColor[3] );
