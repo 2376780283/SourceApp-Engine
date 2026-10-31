@@ -137,7 +137,7 @@ void CHudUHHermitCards::Paint()
 
 	// Collected cards: "<N>/52".
 	wchar_t szText[32];
-	swprintf( szText, L"%i/52", m_iCardsCount );
+	swprintf( szText, ARRAYSIZE(szText), L"%i/52", m_iCardsCount );
 
 	vgui::surface()->DrawSetTextFont( m_hNumberFont );
 	vgui::surface()->DrawSetTextColor( 255, 255, 255, m_iAlpha );
@@ -147,7 +147,7 @@ void CHudUHHermitCards::Paint()
 	// Quest progress (only while a quest is active).
 	if ( m_iQuestTotal > 0 )
 	{
-		swprintf( szText, L"   %i/%i", m_iQuestCurrent, m_iQuestTotal );
+		swprintf( szText, ARRAYSIZE(szText), L"   %i/%i", m_iQuestCurrent, m_iQuestTotal );
 		vgui::surface()->DrawSetTextPos( (int)m_flText2X, (int)m_flText2Y );
 		vgui::surface()->DrawUnicodeString( szText );
 	}
