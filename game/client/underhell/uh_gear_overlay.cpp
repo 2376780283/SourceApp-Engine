@@ -17,7 +17,7 @@
 
 #include "cbase.h"
 #include "ScreenSpaceEffects.h"
-#include "materialsystem/materialsystemutil.h"
+#include "materialsystem/MaterialSystemUtil.h"
 #include "materialsystem/imaterial.h"
 #include "view_scene.h"
 #include "c_basehlplayer.h"

@@ -12,7 +12,7 @@
 #include "model_types.h"
 #include "studio.h"
 #include "materialsystem/MaterialSystemUtil.h"
-#include "materialsystem/IMaterialVar.h"
+#include "materialsystem/imaterialvar.h"
 #include "KeyValues.h"
 
 #include "tier0/memdbgon.h"
