@@ -33,6 +33,7 @@ on:
           - portal
           - snowdrop_escape
           - swelter
+          - underhell
           - nh2
       android_api:
         description: 'Android API level'
@@ -99,6 +100,10 @@ jobs:
             SnowDrop-Orig)
               GAMES_JSON=$(jq -nc --arg b "$BRANCH" \
                 '[{"game":"snowdrop_escape","branch":$b}]')
+              ;;
+            underhell-orig)
+              GAMES_JSON=$(jq -nc --arg b "$BRANCH" \
+                '[{"game":"underhell","branch":$b}]')
               ;;
             Swelter-orig)
               GAMES_JSON=$(jq -nc --arg b "$BRANCH" \
