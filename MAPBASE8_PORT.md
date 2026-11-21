@@ -38,6 +38,31 @@ its local differences are retained.
   absent. VBSP help entries for absent Mapbase tool options are omitted.
   The applicable thread-count help update is retained.
 
+## Additional E:Z2 feature ports
+
+The following upstream commits are ported with the same `sp/src/` mapping:
+
+- `c26e96eeeec790aee133f0857b26d4798b23287e`: split weapon selection HUD,
+  including explicit SLAM satchel/tripmine selection.
+- `d7cb9c0da82be624f181a352b3dc4e3694fe88ed`: Vortigaunt attack-speed cvars.
+- `1fd6b8a16d4fe019b3c545162ab37565934e7188`: energy grenade dynamic light.
+  Its new client source is registered in `client_ez2.vpc`, parsed by waf.
+- `68a1eb9df801465b38a9f479d55c56b3a4f0c353`: projected muzzle flashes and
+  rocket trail lights.
+- `22a62ba1b59996744624afdf3715d1362b029562`: Vortigaunt zap and Combine ball
+  dynamic lights (applied after the projected texture changes).
+
+The changes in `918f420c`, `d9fd3353`, `2edf4ed9`, and `b9af81eb` already
+exist in the local ancestry as `d6c95916`: Pose parameter bounds checks use
+`&&` in the setter, and client scripting can be disabled separately.
+
+All 18 affected translation units in the existing Android ARM64 compilation
+database passed `-fsyntax-only` with the configured compiler and flags. The
+full client/server build was stopped after partial compilation to run these
+focused checks; a complete link and runtime test have not been performed.
+The lighting materials and split-selection weapon scripts/icons must come
+from the corresponding game content; they are not supplied by these commits.
+
 ## Validation
 
 Use the existing Android ARM64 / `entropyzero2` configuration:
