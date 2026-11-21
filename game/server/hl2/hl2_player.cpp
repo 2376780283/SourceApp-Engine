@@ -634,6 +634,8 @@ BEGIN_DATADESC( CHL2_Player )
 	DEFINE_FIELD( m_flNextKickAttack , FIELD_TIME ),
 	DEFINE_FIELD( m_bKickWeaponLowered, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_LegModelName, FIELD_STRING ),
+	DEFINE_FIELD( m_nLegSkin, FIELD_INTEGER ),
+	DEFINE_FIELD( m_nLegBody, FIELD_INTEGER ),
 #endif
 
 	DEFINE_FIELD( m_flTimeIgnoreFallDamage, FIELD_TIME ),
@@ -797,6 +799,9 @@ IMPLEMENT_SERVERCLASS_ST(CHL2_Player, DT_HL2_Player)
 #ifdef SP_ANIM_STATE
 	SendPropFloat( SENDINFO(m_flAnimRenderYaw), 0, SPROP_NOSCALE ),
 	SendPropFloat( SENDINFO(m_flAnimRenderZ), 0, SPROP_NOSCALE ),
+#endif
+#ifdef EZ2
+	SendPropFloat( SENDINFO(m_flNextKickAttack), 0, SPROP_NOSCALE ),
 #endif
 END_SEND_TABLE()
 
@@ -2310,7 +2315,9 @@ bool CHL2_Player::CommanderExecuteOne( CAI_BaseNPC *pNpc, const commandgoal_t &g
 		if ( GetActiveWeapon() && goal.m_pGoalEntity == this && sv_command_viewmodel_anims.GetBool()) {
 			GetActiveWeapon()->SendWeaponAnim( ACT_VM_COMMAND_RECALL );
 		}
-		
+
+		AddAnimStateLayer( SelectWeightedSequence( ACT_GESTURE_SIGNAL_GROUP ) );
+
 		// 1upD - Fire player proxy output
 		helperFireSquadCommandOuput("OnPlayerRecallSquad", Allies);
 #endif
@@ -2324,6 +2331,8 @@ bool CHL2_Player::CommanderExecuteOne( CAI_BaseNPC *pNpc, const commandgoal_t &g
 		if (GetActiveWeapon() && sv_command_viewmodel_anims.GetBool()) {
 			GetActiveWeapon()->SendWeaponAnim( ACT_VM_COMMAND_SEND );
 		}
+
+		AddAnimStateLayer( SelectWeightedSequence( ACT_GESTURE_SIGNAL_ADVANCE ) );
 
 		// 1upD - Fire player proxy output
 		helperFireSquadCommandOuput("OnPlayerSendSquad", Allies);
@@ -5057,6 +5066,8 @@ void CHL2_Player::StartKickAnimation( void )
 	if ( vm )
 	{
 		vm->SetWeaponModel( STRING( m_LegModelName ), NULL );
+		vm->m_nSkin = m_nLegSkin;
+		vm->m_nBody = m_nLegBody;
 
 		int	idealSequence = vm->SelectWeightedSequence( ACT_VM_PRIMARYATTACK );
 
@@ -5066,6 +5077,8 @@ void CHL2_Player::StartKickAnimation( void )
 			vm->SetPlaybackRate( 1.0f );
 		}
 	}
+
+	SetAnimation( PLAYER_ATTACK3 );
 }
 
 void CHL2_Player::HandleKickAnimation( void )
@@ -5379,6 +5392,12 @@ void CHL2_Player::ResetProtagonist()
 		vm->m_nBody = 0;
 	}
 
+#ifdef EZ2
+	m_LegModelName = AllocPooledString( sv_player_kick_default_modelname.GetString() );
+	m_nLegSkin = 0;
+	m_nLegBody = 0;
+#endif
+
 	// RemoveContext will automatically remove contexts by name, regardless of how values are specified
 	char szContexts[128] = { 0 };
 	g_ProtagonistSystem.GetProtagonist_ResponseContexts( this, szContexts, sizeof( szContexts ) );
@@ -5405,6 +5424,15 @@ void CHL2_Player::RefreshProtagonistData()
 
 	m_nSkin = g_ProtagonistSystem.GetProtagonist_PlayerModelSkin( this );
 	m_nBody = g_ProtagonistSystem.GetProtagonist_PlayerModelBody( this );
+
+#ifdef EZ2
+	const char *pszLegModel = g_ProtagonistSystem.GetProtagonist_LegModel( this );
+	if (pszLegModel)
+		m_LegModelName = MAKE_STRING( pszLegModel );
+
+	m_nLegSkin = g_ProtagonistSystem.GetProtagonist_LegModelSkin( this );
+	m_nLegBody = g_ProtagonistSystem.GetProtagonist_LegModelBody( this );
+#endif
 
 	char szContexts[128] = { 0 };
 	g_ProtagonistSystem.GetProtagonist_ResponseContexts( this, szContexts, sizeof( szContexts ) );
