@@ -150,7 +150,7 @@ CFlashlightEffect::CFlashlightEffect(int nEntIndex)
 CFlashlightEffect::~CFlashlightEffect()
 {
 	LightOff();
-#ifdef EZ
+#ifdef EZ1
 	if ( IsNVG() )
 	{
 		view->SetScreenOverlayMaterial( NULL );
@@ -184,7 +184,7 @@ void CFlashlightEffect::TurnOn()
 {
 	m_bIsOn = true;
 	m_flDistMod = 1.0f;
-#ifdef EZ
+#ifdef EZ1
 	if ( IsNVG() )
 	{
 		view->SetScreenOverlayMaterial( m_CoverScreenTexture );

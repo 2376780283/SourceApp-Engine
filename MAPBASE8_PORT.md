@@ -84,6 +84,23 @@ The eight affected translation units available in the compilation database,
 plus `npc_combine.cpp` and `weapon_ar2.cpp`, passed Android ARM64
 `-fsyntax-only` checks. Full linking and runtime validation remain outstanding.
 
+## Additional E:Z2 and Mapbase fixes
+
+- `4c4fea9c`, `713949a3`, and `3d5bb8d3` fix Gonome secondary melee impulse
+  direction and use impulse application instead of replacing velocity.
+- `6783bc1e` saves `m_bDrawPlayerLegs` in the base player datadesc.
+- `5b73b9b2` and `cea9ad09` add Tripmine activation/detonation particles,
+  delayed detonation audio, and optional endpoint sprites.
+- `99b74050` moves E:Z2 NVG handling clientside and adds default flashlight
+  support. The legacy flashlight command calls are restricted to `EZ1`.
+  The legacy overlay command in upstream `view_scene.cpp` is already absent
+  locally, so that file needs no change for E:Z2.
+
+The Tripmine and NVG changes depend on game content for their particle systems,
+sounds, sprite material, and flashlight assets. All 10 affected client/server
+translation units passed Android ARM64 `-fsyntax-only` checks using the existing
+compilation database. Full linking and runtime validation remain outstanding.
+
 ## Validation
 
 Use the existing Android ARM64 / `entropyzero2` configuration:
