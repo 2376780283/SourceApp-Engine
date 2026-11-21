@@ -63,6 +63,27 @@ focused checks; a complete link and runtime test have not been performed.
 The lighting materials and split-selection weapon scripts/icons must come
 from the corresponding game content; they are not supplied by these commits.
 
+## Additional NPC and gameplay fixes
+
+The following E:Z2 fixes are also ported:
+
+- `e639c8c6` adds the manhack deployment gesture activity.
+- `0eceed65` supports multiple active manhacks per Combine soldier, including
+  save/restore fields and deployment inputs.
+- `7fe8cfc6` avoids dereferencing an empty concept symbol.
+- `2f93d056` adds the ragdoll time-warp think function to its datadesc.
+- `dab32e70` spreads NPC prototype AR2 shots and prevents their mutual
+  collision.
+- `79111d88` makes NPC damage insta-kill zombie torsos during the kick.
+- `431db41d` initializes Xen vortex lookup containers before use.
+- `7d3873d1` keeps predators on default surrounding bounds.
+- `2a00bb47` applies the APC ducking damage scale multiplicatively.
+- `fc1336a6` returns a reset activity for non-gesture Clone Cop flinches.
+
+The eight affected translation units available in the compilation database,
+plus `npc_combine.cpp` and `weapon_ar2.cpp`, passed Android ARM64
+`-fsyntax-only` checks. Full linking and runtime validation remain outstanding.
+
 ## Validation
 
 Use the existing Android ARM64 / `entropyzero2` configuration:
