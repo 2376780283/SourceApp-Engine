@@ -23,6 +23,7 @@ def build(bld):
 			'vscript_squirrel.cpp',
 			'vscript_bindings_base.cpp',
 			'vscript_bindings_math.cpp',
+			'sqdbg/sqdbg/server.cpp',
 			'squirrel/sqstdlib/sqstdaux.cpp',
 			'squirrel/sqstdlib/sqstdblob.cpp',
 			'squirrel/sqstdlib/sqstdio.cpp',
@@ -48,6 +49,8 @@ def build(bld):
 	includes = [
 		'.',
 		'./squirrel/include',
+		'./squirrel/squirrel',
+		'./squirrel/sqstdlib',
 		'./sqdbg/include',
 		'../common',
 		'../public',
@@ -58,6 +61,8 @@ def build(bld):
 	]	
 
 	defines = []
+	if bld.env.DEST_OS == 'win32':
+		defines += ['_CRT_SECURE_NO_WARNINGS', '_WINSOCK_DEPRECATED_NO_WARNINGS']
 
 	libs = [
 		'tier0',
@@ -67,6 +72,9 @@ def build(bld):
 		'mathlib',
 		'vstdlib',
 	]
+
+	if bld.env.DEST_OS == 'win32':
+		libs += ['ws2_32']
 
 	bld.stlib(
 		source   = source,

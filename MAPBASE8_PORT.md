@@ -1,0 +1,50 @@
+# Mapbase 8.0 port for the waf engine tree
+
+Upstream: `../source-sdk-2013`, merge commit
+`1a147905f667cae0a3d3894949debe25a60297b5` (Mapbase v8.0 in E:Z2).
+The port uses the change relative to its first parent,
+`cdf2d664`, and maps `sp/src/` to this repository's root.
+
+## Integration
+
+- Port the gameplay, animation, protagonist, timer, choreographed sentence,
+  rendering, VGUI and VScript changes, preserving local engine/platform changes.
+- Keep the engine's multi-word function pointer storage for 64-bit member calls
+  while adding upstream's temporary Vector/QAngle return storage and refcounted
+  script returns.
+- Pass the class-description initialization argument explicitly in the member
+  binding macro to avoid a Clang frontend crash.
+- Declare KeyValues constructor defaults in the header for Clang compatibility.
+- Client/server waf scripts parse their Mapbase VPC lists; those lists include
+  the renamed animation state and new shared/client/server sources.
+- Add the existing sqdbg implementation and Squirrel internal include paths to
+  `vscript/wscript`, with Windows socket linkage.
+
+## Upstream changes already present
+
+The sqdbg sources and license already match the target commit. The response
+system already includes the choreosentence response type and include-path fixes;
+its local differences are retained.
+
+## Tree-specific omissions
+
+- Upstream README and Visual Studio ignore patterns are not applied to this
+  engine repository's documentation/build layout.
+- `vpc_scripts/newer_vs_toolsets.vpc` and its registry fix are Visual Studio
+  support files absent from this waf tree.
+- `utils/vbsp/matrixinvert.h` is already absent. The parallax-OBB code updated in
+  upstream `utils/vbsp/map.cpp` does not exist here; no new tool feature is added.
+- `utils/vbsp/vscript_funcs_vmfs.cpp` and its VScript tool infrastructure are
+  absent. VBSP help entries for absent Mapbase tool options are omitted.
+  The applicable thread-count help update is retained.
+
+## Validation
+
+Use the existing Android ARM64 / `entropyzero2` configuration:
+
+```sh
+python3 waf build --targets=client,server,vscript -j4
+```
+
+Gameplay assets, maps and scripts outside the source commit are not included.
+Runtime validation requires the corresponding E:Z2 / Mapbase content.

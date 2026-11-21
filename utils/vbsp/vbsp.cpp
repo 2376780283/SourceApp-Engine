@@ -1196,8 +1196,9 @@ int RunVBSP( int argc, char **argv )
 			Warning(
 				"Other options  :\n"
 				"  -novconfig   : Don't bring up graphical UI on vproject errors.\n"
-				"  -threads     : Control the number of threads vbsp uses (defaults to the # of\n"
-				"                 processors on your machine).\n"
+				"  -threads #   : Control the number of threads vbsp uses (defaults to the #\n"
+				"                or processors on your machine).\n"
+				"				 Threads can be negative; if so, they will be subtracted from the total thread count.\n"
 				"  -verboseentities: If -v is on, this disables verbose output for submodels.\n"
 				"  -noweld      : Don't join face vertices together.\n"
 				"  -nocsg       : Don't chop out intersecting brush areas.\n"
